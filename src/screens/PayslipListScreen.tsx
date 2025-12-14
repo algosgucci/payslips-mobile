@@ -3,6 +3,7 @@ import {View, FlatList, StyleSheet} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import PayslipCard from '../components/PayslipCard';
+import SortButton from '../components/SortButton';
 import {usePayslips} from '../context/PayslipContext';
 import {RootStackParamList} from '../navigation/AppNavigator';
 import {Payslip} from '../types';
@@ -12,10 +13,14 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const PayslipListScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const {payslips} = usePayslips();
+  const {sortedPayslips, sortOrder, setSortOrder} = usePayslips();
 
   const handlePayslipPress = (payslip: Payslip) => {
     navigation.navigate('PayslipDetails', {payslipId: payslip.id});
+  };
+
+  const handleSortToggle = () => {
+    setSortOrder(sortOrder === 'recent' ? 'oldest' : 'recent');
   };
 
   const renderPayslipItem = ({item}: {item: Payslip}) => {
@@ -29,8 +34,9 @@ const PayslipListScreen = () => {
 
   return (
     <View style={styles.container}>
+      <SortButton sortOrder={sortOrder} onPress={handleSortToggle} />
       <FlatList
-        data={payslips}
+        data={sortedPayslips}
         renderItem={renderPayslipItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
