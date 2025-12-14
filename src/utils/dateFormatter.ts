@@ -30,3 +30,4 @@ export const formatDateRange = (fromDate: string, toDate: string): string => {
 export const getYear = (dateString: string): number => {
   return new Date(dateString).getFullYear();
 };
+

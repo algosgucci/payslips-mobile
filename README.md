@@ -15,3 +15,4 @@ A React Native application for managing and viewing payslips.
 ## Running the App
 
 [Run instructions to be added]
+

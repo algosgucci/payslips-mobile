@@ -8,3 +8,4 @@ export interface Payslip {
 export type SortOrder = 'recent' | 'oldest';
 
 export type FileType = 'pdf' | 'image';
+

@@ -7,6 +7,7 @@ interface PayslipContextType {
   sortedPayslips: Payslip[];
   sortOrder: SortOrder;
   setSortOrder: (order: SortOrder) => void;
+  getPayslipById: (id: string) => Payslip | undefined;
 }
 
 const PayslipContext = createContext<PayslipContextType | undefined>(undefined);
@@ -25,8 +26,12 @@ export const PayslipProvider: React.FC<{children: ReactNode}> = ({children}) => 
     return sorted;
   }, [payslips, sortOrder]);
 
+  const getPayslipById = (id: string): Payslip | undefined => {
+    return payslips.find(p => p.id === id);
+  };
+
   return (
-    <PayslipContext.Provider value={{payslips, sortedPayslips, sortOrder, setSortOrder}}>
+    <PayslipContext.Provider value={{payslips, sortedPayslips, sortOrder, setSortOrder, getPayslipById}}>
       {children}
     </PayslipContext.Provider>
   );
@@ -39,3 +44,4 @@ export const usePayslips = (): PayslipContextType => {
   }
   return context;
 };
+

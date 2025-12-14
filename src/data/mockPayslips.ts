@@ -46,3 +46,4 @@ export const mockPayslips: Payslip[] = [
     file: 'payslip_may_2024.pdf',
   },
 ];
+
