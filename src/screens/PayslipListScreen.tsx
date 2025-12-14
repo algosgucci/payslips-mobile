@@ -1,11 +1,41 @@
 import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, FlatList, StyleSheet} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import PayslipCard from '../components/PayslipCard';
+import {usePayslips} from '../context/PayslipContext';
+import {RootStackParamList} from '../navigation/AppNavigator';
+import {Payslip} from '../types';
+import {theme} from '../theme';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const PayslipListScreen = () => {
+  const navigation = useNavigation<NavigationProp>();
+  const {payslips} = usePayslips();
+
+  const handlePayslipPress = (payslip: Payslip) => {
+    navigation.navigate('PayslipDetails', {payslipId: payslip.id});
+  };
+
+  const renderPayslipItem = ({item}: {item: Payslip}) => {
+    return (
+      <PayslipCard
+        payslip={item}
+        onPress={() => handlePayslipPress(item)}
+      />
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Payslip List Screen</Text>
-      <Text style={styles.subtext}>Coming soon...</Text>
+      <FlatList
+        data={payslips}
+        renderItem={renderPayslipItem}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      />
     </View>
   );
 };
@@ -13,19 +43,10 @@ const PayslipListScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: theme.colors.background,
   },
-  text: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
-  subtext: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginTop: 8,
+  listContent: {
+    paddingVertical: theme.spacing.sm,
   },
 });
 
