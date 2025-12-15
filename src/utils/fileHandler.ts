@@ -1,8 +1,27 @@
 import {Platform} from 'react-native';
-import RNFS from 'react-native-fs';
 import FileViewer from 'react-native-file-viewer';
 import {Payslip, FileType} from '../types';
 import {requestStoragePermission} from './permissions';
+
+// Lazy import react-native-fs to avoid NativeEventEmitter initialization issues
+let RNFS: any = null;
+const getRNFS = () => {
+  if (!RNFS) {
+    try {
+      const RNFSModule = require('react-native-fs');
+      // Handle both default export and named export
+      RNFS = RNFSModule.default || RNFSModule;
+      // Verify the module has the required properties
+      if (!RNFS || !RNFS.DocumentDirectoryPath) {
+        throw new Error('react-native-fs module is not properly initialized');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`react-native-fs is not properly linked: ${errorMessage}. Please run: cd ios && pod install && cd .. && npx react-native run-ios`);
+    }
+  }
+  return RNFS;
+};
 
 /**
  * Detects file type from file path/name
@@ -16,12 +35,13 @@ export const getFileType = (filePath: string): FileType => {
  * Gets the appropriate download directory based on platform
  */
 const getDownloadDirectory = (): string => {
+  const fs = getRNFS();
   if (Platform.OS === 'ios') {
-    return RNFS.DocumentDirectoryPath;
+    return fs.DocumentDirectoryPath;
   } else {
     // Android - use app-specific directory (works without permission on Android 10+)
     // For Downloads folder, we'd need permission, so using app directory is safer
-    return RNFS.DocumentDirectoryPath;
+    return fs.DocumentDirectoryPath;
   }
 };
 
@@ -42,18 +62,19 @@ export const downloadPayslip = async (payslip: Payslip): Promise<string> => {
       );
     }
 
+    const fs = getRNFS();
     const downloadDir = getDownloadDirectory();
     const fileName = payslip.file;
     const destinationPath = `${downloadDir}/${fileName}`;
 
     // Check if directory exists, create if not
-    const dirExists = await RNFS.exists(downloadDir);
+    const dirExists = await fs.exists(downloadDir);
     if (!dirExists) {
-      await RNFS.mkdir(downloadDir);
+      await fs.mkdir(downloadDir);
     }
 
     // Check available storage space (basic check)
-    const freeSpace = await RNFS.getFSInfo();
+    const freeSpace = await fs.getFSInfo();
     if (freeSpace.freeSpace < 1024 * 1024) {
       // Less than 1MB free
       throw new Error('Insufficient storage space. Please free up some space and try again.');
@@ -64,17 +85,17 @@ export const downloadPayslip = async (payslip: Payslip): Promise<string> => {
     const fileContent = `Payslip Information\n\nID: ${payslip.id}\nPeriod: ${payslip.fromDate} to ${payslip.toDate}\n\nThis is a placeholder file. In production, this would be the actual payslip PDF or image.`;
 
     // Check if file already exists
-    const fileExists = await RNFS.exists(destinationPath);
+    const fileExists = await fs.exists(destinationPath);
     if (fileExists) {
       // Optionally, we could add a timestamp or ask user
       // For now, we'll overwrite it
     }
 
     // Write the file
-    await RNFS.writeFile(destinationPath, fileContent, 'utf8');
+    await fs.writeFile(destinationPath, fileContent, 'utf8');
 
     // Verify file was written
-    const verifyExists = await RNFS.exists(destinationPath);
+    const verifyExists = await fs.exists(destinationPath);
     if (!verifyExists) {
       throw new Error('File was not saved correctly. Please try again.');
     }
@@ -110,11 +131,12 @@ export const getDownloadLocationMessage = (filePath: string): string => {
  */
 export const previewPayslip = async (payslip: Payslip): Promise<void> => {
   try {
+    const fs = getRNFS();
     const downloadDir = getDownloadDirectory();
     const filePath = `${downloadDir}/${payslip.file}`;
 
     // Check if file exists, download if not
-    const fileExists = await RNFS.exists(filePath);
+    const fileExists = await fs.exists(filePath);
     if (!fileExists) {
       // Download first, then preview
       await downloadPayslip(payslip);
