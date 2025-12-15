@@ -24,6 +24,8 @@ const AppNavigator = () => {
           headerTitleStyle: {
             fontWeight: 'bold',
           },
+          headerBackTitleVisible: false,
+          headerLargeTitle: false,
         }}>
         <Stack.Screen
           name="PayslipList"
@@ -33,7 +35,7 @@ const AppNavigator = () => {
         <Stack.Screen
           name="PayslipDetails"
           component={PayslipDetailsScreen}
-          options={{title: 'Payslip Details'}}
+          options={{title: 'Details'}}
         />
       </Stack.Navigator>
     </NavigationContainer>
