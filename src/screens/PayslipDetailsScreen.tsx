@@ -33,12 +33,43 @@ const PayslipDetailsScreen = () => {
     try {
       const filePath = await downloadPayslip(payslip);
       const message = getDownloadLocationMessage(filePath);
-      Alert.alert('Download Successful', message, [{text: 'OK'}]);
+      Alert.alert(
+        'Download Successful',
+        message,
+        [
+          {
+            text: 'OK',
+            style: 'default',
+          },
+        ],
+      );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      Alert.alert('Download Failed', errorMessage, [{text: 'OK'}]);
+      Alert.alert(
+        'Download Failed',
+        errorMessage,
+        [
+          {
+            text: 'OK',
+            style: 'default',
+          },
+        ],
+      );
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handlePreview = async () => {
+    try {
+      // For now, show an alert. Preview functionality will use react-native-file-viewer
+      Alert.alert(
+        'Preview',
+        'File preview will open the payslip in the default viewer. This feature requires the file to be downloaded first.',
+        [{text: 'OK'}],
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Unable to preview file');
     }
   };
 
@@ -69,23 +100,34 @@ const PayslipDetailsScreen = () => {
         <Text style={styles.value}>{fileTypeLabel}</Text>
       </View>
 
-      <TouchableOpacity
-        style={[styles.downloadButton, isDownloading && styles.downloadButtonDisabled]}
-        onPress={handleDownload}
-        disabled={isDownloading}
-        activeOpacity={0.7}
-        accessibilityRole="button"
-        accessibilityLabel="Download payslip"
-        accessibilityState={{disabled: isDownloading}}>
-        {isDownloading ? (
-          <View style={styles.downloadButtonContent}>
-            <ActivityIndicator color="#FFFFFF" size="small" />
-            <Text style={styles.downloadButtonText}>Downloading...</Text>
-          </View>
-        ) : (
-          <Text style={styles.downloadButtonText}>Download Payslip</Text>
-        )}
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[styles.downloadButton, isDownloading && styles.downloadButtonDisabled]}
+          onPress={handleDownload}
+          disabled={isDownloading}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Download payslip"
+          accessibilityState={{disabled: isDownloading}}>
+          {isDownloading ? (
+            <View style={styles.downloadButtonContent}>
+              <ActivityIndicator color="#FFFFFF" size="small" />
+              <Text style={styles.downloadButtonText}>Downloading...</Text>
+            </View>
+          ) : (
+            <Text style={styles.downloadButtonText}>Download Payslip</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.previewButton}
+          onPress={handlePreview}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Preview payslip">
+          <Text style={styles.previewButtonText}>Preview Payslip</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 };
@@ -116,12 +158,15 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontWeight: '500',
   },
+  buttonContainer: {
+    marginTop: theme.spacing.lg,
+    gap: theme.spacing.md,
+  },
   downloadButton: {
     backgroundColor: theme.colors.primary,
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.md,
     alignItems: 'center',
-    marginTop: theme.spacing.lg,
   },
   downloadButtonDisabled: {
     opacity: 0.6,
@@ -133,6 +178,19 @@ const styles = StyleSheet.create({
   },
   downloadButtonText: {
     color: '#FFFFFF',
+    fontSize: theme.typography.body.fontSize,
+    fontWeight: '600',
+  },
+  previewButton: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  previewButtonText: {
+    color: theme.colors.primary,
     fontSize: theme.typography.body.fontSize,
     fontWeight: '600',
   },
