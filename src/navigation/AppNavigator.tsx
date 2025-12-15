@@ -26,6 +26,8 @@ const AppNavigator = () => {
           },
           headerBackTitleVisible: false,
           headerLargeTitle: false,
+          headerBackButtonDisplayMode: 'minimal',
+          headerShadowVisible: false,
         }}>
         <Stack.Screen
           name="PayslipList"
@@ -35,7 +37,10 @@ const AppNavigator = () => {
         <Stack.Screen
           name="PayslipDetails"
           component={PayslipDetailsScreen}
-          options={{title: 'Details'}}
+          options={{
+            title: 'Details',
+            headerBackButtonDisplayMode: 'minimal',
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>
