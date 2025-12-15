@@ -40,9 +40,7 @@ describe('PayslipListScreen', () => {
   });
 
   it('should toggle sort order when sort button is pressed', async () => {
-    const {getByText, queryByText} = renderWithProviders(
-      <PayslipListScreen />,
-    );
+    const {getByText} = renderWithProviders(<PayslipListScreen />);
 
     await waitFor(() => {
       expect(getByText('Most Recent First')).toBeTruthy();
@@ -106,7 +104,7 @@ describe('PayslipListScreen', () => {
   });
 
   it('should filter payslips by search text', async () => {
-    const {getByPlaceholderText, getByText, queryByText} = renderWithProviders(
+    const {getByPlaceholderText, getByText} = renderWithProviders(
       <PayslipListScreen />,
     );
 

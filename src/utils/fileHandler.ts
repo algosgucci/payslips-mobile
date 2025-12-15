@@ -1,4 +1,4 @@
-import {Platform, Alert} from 'react-native';
+import {Platform} from 'react-native';
 import RNFS from 'react-native-fs';
 import FileViewer from 'react-native-file-viewer';
 import {Payslip, FileType} from '../types';

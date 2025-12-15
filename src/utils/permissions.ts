@@ -1,5 +1,4 @@
 import {Platform, PermissionsAndroid} from 'react-native';
-import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 
 /**
  * Requests storage permission for Android
