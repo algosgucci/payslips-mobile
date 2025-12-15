@@ -4,7 +4,7 @@ import {RouteProp, useRoute} from '@react-navigation/native';
 import {RootStackParamList} from '../navigation/AppNavigator';
 import {usePayslips} from '../context/PayslipContext';
 import {formatDate, formatDateRange} from '../utils/dateFormatter';
-import {getFileType, downloadPayslip, getDownloadLocationMessage} from '../utils/fileHandler';
+import {getFileType, downloadPayslip, getDownloadLocationMessage, previewPayslip} from '../utils/fileHandler';
 import {theme} from '../theme';
 
 type PayslipDetailsRouteProp = RouteProp<RootStackParamList, 'PayslipDetails'>;
@@ -14,6 +14,7 @@ const PayslipDetailsScreen = () => {
   const {payslipId} = route.params;
   const {getPayslipById} = usePayslips();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
 
   const payslip = getPayslipById(payslipId);
 
@@ -61,15 +62,15 @@ const PayslipDetailsScreen = () => {
   };
 
   const handlePreview = async () => {
+    setIsPreviewing(true);
     try {
-      // For now, show an alert. Preview functionality will use react-native-file-viewer
-      Alert.alert(
-        'Preview',
-        'File preview will open the payslip in the default viewer. This feature requires the file to be downloaded first.',
-        [{text: 'OK'}],
-      );
+      await previewPayslip(payslip);
+      // FileViewer handles the preview, no need for success message
     } catch (error) {
-      Alert.alert('Error', 'Unable to preview file');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      Alert.alert('Preview Failed', errorMessage, [{text: 'OK'}]);
+    } finally {
+      setIsPreviewing(false);
     }
   };
 
@@ -120,12 +121,21 @@ const PayslipDetailsScreen = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.previewButton}
+          style={[styles.previewButton, isPreviewing && styles.previewButtonDisabled]}
           onPress={handlePreview}
+          disabled={isPreviewing}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel="Preview payslip">
-          <Text style={styles.previewButtonText}>Preview Payslip</Text>
+          accessibilityLabel="Preview payslip"
+          accessibilityState={{disabled: isPreviewing}}>
+          {isPreviewing ? (
+            <View style={styles.previewButtonContent}>
+              <ActivityIndicator color={theme.colors.primary} size="small" />
+              <Text style={styles.previewButtonText}>Opening...</Text>
+            </View>
+          ) : (
+            <Text style={styles.previewButtonText}>Preview Payslip</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -188,6 +198,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: theme.colors.border,
+  },
+  previewButtonDisabled: {
+    opacity: 0.6,
+  },
+  previewButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
   },
   previewButtonText: {
     color: theme.colors.primary,

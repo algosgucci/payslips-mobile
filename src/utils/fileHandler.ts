@@ -1,5 +1,6 @@
 import {Platform, Alert} from 'react-native';
 import RNFS from 'react-native-fs';
+import FileViewer from 'react-native-file-viewer';
 import {Payslip, FileType} from '../types';
 import {requestStoragePermission} from './permissions';
 
@@ -100,5 +101,40 @@ export const getDownloadLocationMessage = (filePath: string): string => {
     return `Payslip saved to Documents folder.\n\nYou can access it via Files app > On My iPhone > PayslipsApp`;
   } else {
     return `Payslip saved to app storage.\n\nPath: ${filePath}`;
+  }
+};
+
+/**
+ * Opens a file for preview using the native file viewer
+ * First checks if file exists, downloads if needed
+ */
+export const previewPayslip = async (payslip: Payslip): Promise<void> => {
+  try {
+    const downloadDir = getDownloadDirectory();
+    const filePath = `${downloadDir}/${payslip.file}`;
+
+    // Check if file exists, download if not
+    const fileExists = await RNFS.exists(filePath);
+    if (!fileExists) {
+      // Download first, then preview
+      await downloadPayslip(payslip);
+    }
+
+    // Open file with native viewer
+    await FileViewer.open(filePath, {
+      showOpenWithDialog: true,
+      showAppsSuggestions: true,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    // FileViewer throws specific errors we can handle
+    if (errorMessage.includes('No app found')) {
+      throw new Error('No app available to open this file type.');
+    } else if (errorMessage.includes('permission')) {
+      throw new Error('Permission denied. Please grant storage permission and try again.');
+    } else {
+      throw new Error(`Unable to preview file: ${errorMessage}`);
+    }
   }
 };
