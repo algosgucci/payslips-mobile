@@ -309,8 +309,12 @@ export const getDownloadLocationMessage = (filePath: string): string => {
 /**
  * Opens a file for preview using the native file viewer
  * First checks if file exists, downloads if needed
+ * @param onStatusChange - Optional callback to notify of status changes
  */
-export const previewPayslip = async (payslip: Payslip): Promise<void> => {
+export const previewPayslip = async (
+  payslip: Payslip,
+  onStatusChange?: (status: 'checking' | 'downloading' | 'opening') => void,
+): Promise<void> => {
   try {
     const fs = getRNFS();
     const downloadDir = getDownloadDirectory();
@@ -336,9 +340,11 @@ export const previewPayslip = async (payslip: Payslip): Promise<void> => {
     }
 
     // Check if file exists, download if not
+    onStatusChange?.('checking');
     const fileExists = await fs.exists(filePath);
     if (!fileExists) {
       // Download first, then preview
+      onStatusChange?.('downloading');
       // Yield to UI thread before starting download to keep UI responsive
       await new Promise<void>(resolve => {
         InteractionManager.runAfterInteractions(() => {
@@ -347,6 +353,9 @@ export const previewPayslip = async (payslip: Payslip): Promise<void> => {
       });
       await downloadPayslip(payslip);
     }
+
+    // Opening file viewer
+    onStatusChange?.('opening');
 
     // Verify file exists before trying to open
     const verifyExists = await fs.exists(filePath);

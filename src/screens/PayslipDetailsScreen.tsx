@@ -1,5 +1,5 @@
 import React, {useState, useCallback} from 'react';
-import {View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator} from 'react-native';
+import {View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal} from 'react-native';
 import {RouteProp, useRoute, useNavigation} from '@react-navigation/native';
 import {RootStackParamList} from '../navigation/AppNavigator';
 import {usePayslips} from '../context/PayslipContext';
@@ -17,6 +17,7 @@ const PayslipDetailsScreen = () => {
   const {getPayslipById} = usePayslips();
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewStatus, setPreviewStatus] = useState<'idle' | 'downloading' | 'preparing' | 'opening'>('idle');
   const [error, setError] = useState<string | null>(null);
 
   const payslip = getPayslipById(payslipId);
@@ -63,6 +64,7 @@ const PayslipDetailsScreen = () => {
   const handlePreview = useCallback(async () => {
     setIsPreviewing(true);
     setError(null);
+    setPreviewStatus('idle');
     try {
       // Use requestAnimationFrame to ensure UI updates before heavy operation
       await new Promise<void>(resolve => {
@@ -70,7 +72,13 @@ const PayslipDetailsScreen = () => {
           resolve();
         });
       });
-      await previewPayslip(payslip!);
+      await previewPayslip(payslip!, (status) => {
+        if (status === 'downloading') {
+          setPreviewStatus('downloading');
+        } else if (status === 'opening') {
+          setPreviewStatus('opening');
+        }
+      });
       // FileViewer handles the preview, no need for success message
     } catch (err) {
       let errorMessage: string;
@@ -86,6 +94,7 @@ const PayslipDetailsScreen = () => {
       ]);
     } finally {
       setIsPreviewing(false);
+      setPreviewStatus('idle');
     }
   }, [payslip]);
 
@@ -156,6 +165,33 @@ const PayslipDetailsScreen = () => {
         </View>
       )}
 
+      {/* Loading Modal for Preview */}
+      <Modal
+        visible={isPreviewing}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {}}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ActivityIndicator color={theme.colors.primary} size="large" />
+            <Text style={styles.modalTitle}>
+              {previewStatus === 'downloading'
+                ? 'Downloading Payslip'
+                : previewStatus === 'opening'
+                  ? 'Opening Payslip'
+                  : 'Preparing Payslip'}
+            </Text>
+            <Text style={styles.modalMessage}>
+              {previewStatus === 'downloading'
+                ? 'Please wait while we download the payslip to your device...'
+                : previewStatus === 'opening'
+                  ? 'Opening the payslip in your default viewer...'
+                  : 'Please wait while we prepare the payslip...'}
+            </Text>
+          </View>
+        </View>
+      </Modal>
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           testID="download-button"
@@ -189,7 +225,13 @@ const PayslipDetailsScreen = () => {
           {isPreviewing ? (
             <View style={styles.previewButtonContent}>
               <ActivityIndicator color={theme.colors.primary} size="small" />
-              <Text style={styles.previewButtonText}>Preparing...</Text>
+              <Text style={styles.previewButtonText}>
+                {previewStatus === 'downloading'
+                  ? 'Downloading payslip...'
+                  : previewStatus === 'opening'
+                    ? 'Opening payslip...'
+                    : 'Preparing payslip...'}
+              </Text>
             </View>
           ) : (
             <Text style={styles.previewButtonText}>Preview Payslip</Text>
@@ -313,6 +355,42 @@ const styles = StyleSheet.create({
   errorBannerText: {
     fontSize: theme.typography.body.fontSize,
     color: theme.colors.error,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xl,
+    alignItems: 'center',
+    minWidth: 280,
+    maxWidth: '80%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: theme.typography.h2.fontSize,
+    fontWeight: theme.typography.h2.fontWeight,
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: theme.typography.body.fontSize,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
 
