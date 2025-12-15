@@ -37,11 +37,13 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 4,
+    elevation: 3,
+    minHeight: 60,
+    justifyContent: 'center',
   },
   content: {
     flexDirection: 'row',
@@ -50,8 +52,9 @@ const styles = StyleSheet.create({
   },
   periodText: {
     fontSize: theme.typography.body.fontSize,
-    fontWeight: theme.typography.body.fontWeight,
+    fontWeight: '500',
     color: theme.colors.text,
+    letterSpacing: 0.2,
   },
 });
 

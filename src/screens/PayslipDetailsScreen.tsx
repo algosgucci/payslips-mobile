@@ -167,6 +167,7 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
+    paddingHorizontal: theme.spacing.xs,
   },
   label: {
     fontSize: theme.typography.caption.fontSize,
@@ -179,6 +180,7 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.body.fontSize,
     color: theme.colors.text,
     fontWeight: '500',
+    marginTop: theme.spacing.xs,
   },
   buttonContainer: {
     marginTop: theme.spacing.lg,
