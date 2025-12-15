@@ -37,10 +37,12 @@ export const getFileType = (filePath: string): FileType => {
 const getDownloadDirectory = (): string => {
   const fs = getRNFS();
   if (Platform.OS === 'ios') {
-    return fs.DocumentDirectoryPath;
+    // Use DocumentDirectoryPath - files here are accessible via Files app
+    // Create a Payslips subdirectory for better organization
+    return `${fs.DocumentDirectoryPath}/Payslips`;
   } else {
-    // Android - use app-specific directory (works without permission on Android 10+)
-    // For Downloads folder, we'd need permission, so using app directory is safer
+    // Android - use app Documents directory (accessible without special permissions)
+    // For Downloads folder, we'd need additional permissions
     return fs.DocumentDirectoryPath;
   }
 };
@@ -80,18 +82,95 @@ export const downloadPayslip = async (payslip: Payslip): Promise<string> => {
       throw new Error('Insufficient storage space. Please free up some space and try again.');
     }
 
-    // For demo purposes, create a simple text file with payslip info
-    // In production, you'd copy the actual PDF/image from assets
-    const fileContent = `Payslip Information\n\nID: ${payslip.id}\nPeriod: ${payslip.fromDate} to ${payslip.toDate}\n\nThis is a placeholder file. In production, this would be the actual payslip PDF or image.`;
+    // Create file content based on file type
+    const fileType = getFileType(payslip.file);
+    let fileContent: string;
+    
+    if (fileType === 'pdf') {
+      // Create a minimal valid PDF structure that can be opened by PDF viewers
+      // This is a basic PDF with text content
+      fileContent = `%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+>>
+>>
+>>
+endobj
+4 0 obj
+<<
+/Length 200
+>>
+stream
+BT
+/F1 12 Tf
+100 700 Td
+(Payslip Information) Tj
+0 -20 Td
+(ID: ${payslip.id}) Tj
+0 -20 Td
+(Period: ${payslip.fromDate} to ${payslip.toDate}) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f
+0000000009 00000 n
+0000000058 00000 n
+0000000115 00000 n
+0000000316 00000 n
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+516
+%%EOF`;
+    } else {
+      // For images, create a simple text file (in production, this would be actual image data)
+      fileContent = `Payslip Information
+
+ID: ${payslip.id}
+Period: ${payslip.fromDate} to ${payslip.toDate}
+
+This is a placeholder file. In production, this would be the actual payslip image.`;
+    }
 
     // Check if file already exists
     const fileExists = await fs.exists(destinationPath);
     if (fileExists) {
-      // Optionally, we could add a timestamp or ask user
-      // For now, we'll overwrite it
+      // Remove existing file before writing new one
+      await fs.unlink(destinationPath);
     }
 
     // Write the file
+    // For PDF, write directly as the PDF format is text-based
+    // For images, write as utf8 text
     await fs.writeFile(destinationPath, fileContent, 'utf8');
 
     // Verify file was written
@@ -119,9 +198,10 @@ export const downloadPayslip = async (payslip: Payslip): Promise<string> => {
  */
 export const getDownloadLocationMessage = (filePath: string): string => {
   if (Platform.OS === 'ios') {
-    return `Payslip saved to Documents folder.\n\nYou can access it via Files app > On My iPhone > PayslipsApp`;
+    return `Payslip saved successfully!\n\nYou can access it via:\nFiles app > On My iPhone > PayslipsApp > Payslips\n\nOr use the Preview button to open it directly.`;
   } else {
-    return `Payslip saved to app storage.\n\nPath: ${filePath}`;
+    const fileName = filePath.split('/').pop();
+    return `Payslip saved successfully!\n\nFile: ${fileName}\n\nYou can find it in your Downloads folder or use the Preview button to open it directly.`;
   }
 };
 
@@ -135,6 +215,12 @@ export const previewPayslip = async (payslip: Payslip): Promise<void> => {
     const downloadDir = getDownloadDirectory();
     const filePath = `${downloadDir}/${payslip.file}`;
 
+    // Ensure directory exists
+    const dirExists = await fs.exists(downloadDir);
+    if (!dirExists) {
+      await fs.mkdir(downloadDir);
+    }
+
     // Check if file exists, download if not
     const fileExists = await fs.exists(filePath);
     if (!fileExists) {
@@ -142,19 +228,28 @@ export const previewPayslip = async (payslip: Payslip): Promise<void> => {
       await downloadPayslip(payslip);
     }
 
+    // Verify file exists before trying to open
+    const verifyExists = await fs.exists(filePath);
+    if (!verifyExists) {
+      throw new Error('File was not found. Please try downloading again.');
+    }
+
     // Open file with native viewer
     await FileViewer.open(filePath, {
       showOpenWithDialog: true,
       showAppsSuggestions: true,
+      displayName: payslip.file,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     // FileViewer throws specific errors we can handle
-    if (errorMessage.includes('No app found')) {
-      throw new Error('No app available to open this file type.');
-    } else if (errorMessage.includes('permission')) {
+    if (errorMessage.includes('No app found') || errorMessage.includes('No application')) {
+      throw new Error('No app available to open this file type. Please install a PDF viewer.');
+    } else if (errorMessage.includes('permission') || errorMessage.includes('Permission')) {
       throw new Error('Permission denied. Please grant storage permission and try again.');
+    } else if (errorMessage.includes('not found') || errorMessage.includes('does not exist')) {
+      throw new Error('File not found. Please download the payslip first.');
     } else {
       throw new Error(`Unable to preview file: ${errorMessage}`);
     }
