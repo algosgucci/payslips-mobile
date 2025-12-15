@@ -76,29 +76,39 @@ const PayslipDetailsScreen = () => {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.section}>
-        <Text style={styles.label}>Period</Text>
-        <Text style={styles.value}>{formatDateRange(payslip.fromDate, payslip.toDate)}</Text>
+      <View style={styles.section} accessibilityRole="text">
+        <Text style={styles.label} accessibilityRole="text">Period</Text>
+        <Text style={styles.value} accessibilityLabel={`Period from ${formatDate(payslip.fromDate)} to ${formatDate(payslip.toDate)}`}>
+          {formatDateRange(payslip.fromDate, payslip.toDate)}
+        </Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>From Date</Text>
-        <Text style={styles.value}>{formatDate(payslip.fromDate)}</Text>
+      <View style={styles.section} accessibilityRole="text">
+        <Text style={styles.label} accessibilityRole="text">From Date</Text>
+        <Text style={styles.value} accessibilityLabel={`From date ${formatDate(payslip.fromDate)}`}>
+          {formatDate(payslip.fromDate)}
+        </Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>To Date</Text>
-        <Text style={styles.value}>{formatDate(payslip.toDate)}</Text>
+      <View style={styles.section} accessibilityRole="text">
+        <Text style={styles.label} accessibilityRole="text">To Date</Text>
+        <Text style={styles.value} accessibilityLabel={`To date ${formatDate(payslip.toDate)}`}>
+          {formatDate(payslip.toDate)}
+        </Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Payslip ID</Text>
-        <Text style={styles.value}>{payslip.id}</Text>
+      <View style={styles.section} accessibilityRole="text">
+        <Text style={styles.label} accessibilityRole="text">Payslip ID</Text>
+        <Text style={styles.value} accessibilityLabel={`Payslip ID ${payslip.id}`}>
+          {payslip.id}
+        </Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>File Type</Text>
-        <Text style={styles.value}>{fileTypeLabel}</Text>
+      <View style={styles.section} accessibilityRole="text">
+        <Text style={styles.label} accessibilityRole="text">File Type</Text>
+        <Text style={styles.value} accessibilityLabel={`File type ${fileTypeLabel}`}>
+          {fileTypeLabel}
+        </Text>
       </View>
 
       <View style={styles.buttonContainer}>
@@ -109,6 +119,7 @@ const PayslipDetailsScreen = () => {
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Download payslip"
+          accessibilityHint="Double tap to download payslip to device storage"
           accessibilityState={{disabled: isDownloading}}>
           {isDownloading ? (
             <View style={styles.downloadButtonContent}>
@@ -127,6 +138,7 @@ const PayslipDetailsScreen = () => {
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Preview payslip"
+          accessibilityHint="Double tap to open payslip in default viewer app"
           accessibilityState={{disabled: isPreviewing}}>
           {isPreviewing ? (
             <View style={styles.previewButtonContent}>

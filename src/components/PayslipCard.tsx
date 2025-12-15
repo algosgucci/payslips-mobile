@@ -16,7 +16,8 @@ const PayslipCard: React.FC<PayslipCardProps> = ({payslip, onPress}) => {
       onPress={onPress}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel={`Payslip from ${formatDateRange(payslip.fromDate, payslip.toDate)}`}>
+      accessibilityLabel={`Payslip from ${formatDateRange(payslip.fromDate, payslip.toDate)}`}
+      accessibilityHint="Double tap to view payslip details">
       <View style={styles.content}>
         <Text style={styles.periodText}>
           {formatDateRange(payslip.fromDate, payslip.toDate)}

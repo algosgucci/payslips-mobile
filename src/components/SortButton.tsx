@@ -21,7 +21,8 @@ const SortButton: React.FC<SortButtonProps> = ({sortOrder, onPress}) => {
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={`Sort by ${getSortLabel()}`}
-        accessibilityHint="Tap to change sort order">
+        accessibilityHint="Double tap to toggle between most recent first and oldest first"
+        accessibilityState={{selected: true}}>
         <Text style={styles.buttonText}>{getSortLabel()}</Text>
         <Text style={styles.arrow}>{sortOrder === 'recent' ? '↓' : '↑'}</Text>
       </TouchableOpacity>
