@@ -1,6 +1,6 @@
-import React, {useState, useCallback} from 'react';
-import {View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal} from 'react-native';
-import {RouteProp, useRoute, useNavigation} from '@react-navigation/native';
+import React, {useState, useCallback, useEffect} from 'react';
+import {View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, AppState} from 'react-native';
+import {RouteProp, useRoute, useNavigation, useFocusEffect} from '@react-navigation/native';
 import {RootStackParamList} from '../navigation/AppNavigator';
 import {usePayslips} from '../context/PayslipContext';
 import {formatDate, formatDateRange} from '../utils/dateFormatter';
@@ -21,6 +21,32 @@ const PayslipDetailsScreen = () => {
   const [error, setError] = useState<string | null>(null);
 
   const payslip = getPayslipById(payslipId);
+
+  // Reset preview state when screen comes into focus (user returns from file viewer)
+  useFocusEffect(
+    useCallback(() => {
+      // Reset preview state when screen is focused
+      if (isPreviewing) {
+        setIsPreviewing(false);
+        setPreviewStatus('idle');
+      }
+    }, [isPreviewing])
+  );
+
+  // Also handle app state changes (when user returns from file viewer)
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active' && isPreviewing) {
+        // User returned to app, close the modal
+        setIsPreviewing(false);
+        setPreviewStatus('idle');
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isPreviewing]);
 
   const handleDownload = useCallback(async () => {
     setIsDownloading(true);
@@ -79,8 +105,15 @@ const PayslipDetailsScreen = () => {
           setPreviewStatus('opening');
         }
       });
-      // FileViewer handles the preview, no need for success message
+      // FileViewer opens the preview - close modal immediately after opening
+      // The preview happens in a separate app, so we can close our modal
+      setIsPreviewing(false);
+      setPreviewStatus('idle');
     } catch (err) {
+      // Close modal on error too
+      setIsPreviewing(false);
+      setPreviewStatus('idle');
+      
       let errorMessage: string;
       if (err instanceof AppError) {
         errorMessage = ERROR_MESSAGES[err.code] || err.message;
@@ -92,9 +125,6 @@ const PayslipDetailsScreen = () => {
         {text: 'OK'},
         {text: 'Retry', onPress: handlePreview},
       ]);
-    } finally {
-      setIsPreviewing(false);
-      setPreviewStatus('idle');
     }
   }, [payslip]);
 

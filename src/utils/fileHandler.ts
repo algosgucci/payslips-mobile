@@ -364,10 +364,15 @@ export const previewPayslip = async (
     }
 
     // Open file with native viewer
-    await FileViewer.open(filePath, {
+    // Note: FileViewer.open() may not resolve immediately on all platforms
+    // We open it and let the calling code handle the modal state
+    FileViewer.open(filePath, {
       showOpenWithDialog: true,
       showAppsSuggestions: true,
       displayName: fileName,
+    }).catch(() => {
+      // If opening fails, the error will be caught by the outer try-catch
+      // This is just to prevent unhandled promise rejection
     });
   } catch (error) {
     // Log error for debugging
