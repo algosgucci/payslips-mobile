@@ -64,6 +64,12 @@ const PayslipDetailsScreen = () => {
   const handlePreview = async () => {
     setIsPreviewing(true);
     try {
+      // Use requestAnimationFrame to ensure UI updates before heavy operation
+      await new Promise<void>(resolve => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
       await previewPayslip(payslip);
       // FileViewer handles the preview, no need for success message
     } catch (error) {
@@ -132,24 +138,24 @@ const PayslipDetailsScreen = () => {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.previewButton, isPreviewing && styles.previewButtonDisabled]}
-          onPress={handlePreview}
-          disabled={isPreviewing}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Preview payslip"
-          accessibilityHint="Double tap to open payslip in default viewer app"
-          accessibilityState={{disabled: isPreviewing}}>
-          {isPreviewing ? (
-            <View style={styles.previewButtonContent}>
-              <ActivityIndicator color={theme.colors.primary} size="small" />
-              <Text style={styles.previewButtonText}>Opening...</Text>
-            </View>
-          ) : (
-            <Text style={styles.previewButtonText}>Preview Payslip</Text>
-          )}
-        </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.previewButton, isPreviewing && styles.previewButtonDisabled]}
+                      onPress={handlePreview}
+                      disabled={isPreviewing}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel="Preview payslip"
+                      accessibilityHint="Double tap to open payslip in default viewer app"
+                      accessibilityState={{disabled: isPreviewing}}>
+                      {isPreviewing ? (
+                        <View style={styles.previewButtonContent}>
+                          <ActivityIndicator color={theme.colors.primary} size="small" />
+                          <Text style={styles.previewButtonText}>Preparing...</Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.previewButtonText}>Preview Payslip</Text>
+                      )}
+                    </TouchableOpacity>
       </View>
     </ScrollView>
   );

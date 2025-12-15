@@ -1,4 +1,4 @@
-import {Platform} from 'react-native';
+import {Platform, InteractionManager} from 'react-native';
 import FileViewer from 'react-native-file-viewer';
 import {Payslip, FileType} from '../types';
 import {requestStoragePermission} from './permissions';
@@ -63,6 +63,13 @@ export const downloadPayslip = async (payslip: Payslip): Promise<string> => {
         'Storage permission is required to save payslips. Please grant permission in app settings.',
       );
     }
+
+    // Yield to UI thread before starting heavy operations
+    await new Promise<void>(resolve => {
+      InteractionManager.runAfterInteractions(() => {
+        resolve();
+      });
+    });
 
     const fs = getRNFS();
     const downloadDir = getDownloadDirectory();
@@ -171,6 +178,15 @@ This is a placeholder file. In production, this would be the actual payslip imag
     // Write the file
     // For PDF, write directly as the PDF format is text-based
     // For images, write as utf8 text
+    // Yield to UI thread before file write to keep UI responsive
+    await new Promise<void>(resolve => {
+      // Use setTimeout with 0ms to yield to UI thread
+      setTimeout(() => {
+        resolve();
+      }, 0);
+    });
+    
+    // Perform file write (this is async and won't block UI)
     await fs.writeFile(destinationPath, fileContent, 'utf8');
 
     // Verify file was written
@@ -225,6 +241,12 @@ export const previewPayslip = async (payslip: Payslip): Promise<void> => {
     const fileExists = await fs.exists(filePath);
     if (!fileExists) {
       // Download first, then preview
+      // Yield to UI thread before starting download to keep UI responsive
+      await new Promise<void>(resolve => {
+        InteractionManager.runAfterInteractions(() => {
+          resolve();
+        });
+      });
       await downloadPayslip(payslip);
     }
 
