@@ -16,6 +16,7 @@ const SortButton: React.FC<SortButtonProps> = ({sortOrder, onPress}) => {
   return (
     <View style={styles.container}>
       <TouchableOpacity
+        testID="sort-button"
         style={styles.button}
         onPress={onPress}
         activeOpacity={0.7}
@@ -23,7 +24,7 @@ const SortButton: React.FC<SortButtonProps> = ({sortOrder, onPress}) => {
         accessibilityLabel={`Sort by ${getSortLabel()}`}
         accessibilityHint="Double tap to toggle between most recent first and oldest first"
         accessibilityState={{selected: true}}>
-        <Text style={styles.buttonText}>{getSortLabel()}</Text>
+        <Text testID="sort-button-text" style={styles.buttonText}>{getSortLabel()}</Text>
         <Text style={styles.arrow}>{sortOrder === 'recent' ? '↓' : '↑'}</Text>
       </TouchableOpacity>
     </View>

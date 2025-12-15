@@ -12,6 +12,7 @@ interface PayslipCardProps {
 const PayslipCard: React.FC<PayslipCardProps> = ({payslip, onPress}) => {
   return (
     <TouchableOpacity
+      testID={`payslip-card-${payslip.id}`}
       style={styles.card}
       onPress={onPress}
       activeOpacity={0.7}
@@ -19,7 +20,7 @@ const PayslipCard: React.FC<PayslipCardProps> = ({payslip, onPress}) => {
       accessibilityLabel={`Payslip from ${formatDateRange(payslip.fromDate, payslip.toDate)}`}
       accessibilityHint="Double tap to view payslip details">
       <View style={styles.content}>
-        <Text style={styles.periodText}>
+        <Text testID={`payslip-date-${payslip.id}`} style={styles.periodText}>
           {formatDateRange(payslip.fromDate, payslip.toDate)}
         </Text>
       </View>

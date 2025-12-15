@@ -21,6 +21,7 @@ const FilterInput: React.FC<FilterInputProps> = ({
     <View style={styles.container}>
       <View style={styles.searchContainer}>
         <TextInput
+          testID="search-input"
           style={styles.searchInput}
           placeholder="Search payslips..."
           value={searchText}
@@ -48,23 +49,24 @@ const FilterInput: React.FC<FilterInputProps> = ({
             </Text>
           </TouchableOpacity>
           {availableYears.map(year => (
-            <TouchableOpacity
-              key={year}
-              style={[
-                styles.yearButton,
-                selectedYear === year.toString() && styles.yearButtonActive,
-              ]}
-              onPress={() => onYearChange(selectedYear === year.toString() ? '' : year.toString())}
-              accessibilityRole="button"
-              accessibilityLabel={`Filter by year ${year}`}>
-              <Text
-                style={[
-                  styles.yearButtonText,
-                  selectedYear === year.toString() && styles.yearButtonTextActive,
-                ]}>
-                {year}
-              </Text>
-            </TouchableOpacity>
+                      <TouchableOpacity
+                        key={year}
+                        testID={`year-filter-${year}`}
+                        style={[
+                          styles.yearButton,
+                          selectedYear === year.toString() && styles.yearButtonActive,
+                        ]}
+                        onPress={() => onYearChange(selectedYear === year.toString() ? '' : year.toString())}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Filter by year ${year}`}>
+                        <Text
+                          style={[
+                            styles.yearButtonText,
+                            selectedYear === year.toString() && styles.yearButtonTextActive,
+                          ]}>
+                          {year}
+                        </Text>
+                      </TouchableOpacity>
           ))}
         </View>
       </View>

@@ -112,15 +112,16 @@ const PayslipDetailsScreen = () => {
       </View>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[styles.downloadButton, isDownloading && styles.downloadButtonDisabled]}
-          onPress={handleDownload}
-          disabled={isDownloading}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Download payslip"
-          accessibilityHint="Double tap to download payslip to device storage"
-          accessibilityState={{disabled: isDownloading}}>
+                    <TouchableOpacity
+                      testID="download-button"
+                      style={[styles.downloadButton, isDownloading && styles.downloadButtonDisabled]}
+                      onPress={handleDownload}
+                      disabled={isDownloading}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel="Download payslip"
+                      accessibilityHint="Double tap to download payslip to device storage"
+                      accessibilityState={{disabled: isDownloading}}>
           {isDownloading ? (
             <View style={styles.downloadButtonContent}>
               <ActivityIndicator color="#FFFFFF" size="small" />
