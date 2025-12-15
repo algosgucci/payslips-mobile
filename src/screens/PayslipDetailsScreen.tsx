@@ -15,11 +15,15 @@ const PayslipDetailsScreen = () => {
   const navigation = useNavigation();
   const {payslipId} = route.params;
   const {getPayslipById} = usePayslips();
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const payslip = getPayslipById(payslipId);
 
   const handleDownload = useCallback(async () => {
+    if (isDownloading) return; // Guard against concurrent calls
+    setIsDownloading(true);
     setError(null);
     try {
       const filePath = await downloadPayslip(payslip!);
@@ -52,10 +56,14 @@ const PayslipDetailsScreen = () => {
           },
         ],
       );
+    } finally {
+      setIsDownloading(false);
     }
-  }, [payslip]);
+  }, [isDownloading, payslip]);
 
   const handlePreview = useCallback(async () => {
+    if (isPreviewing) return; // Guard against concurrent calls
+    setIsPreviewing(true);
     setError(null);
     try {
       await previewPayslip(payslip!);
@@ -71,8 +79,10 @@ const PayslipDetailsScreen = () => {
         {text: 'OK'},
         {text: 'Retry', onPress: handlePreview},
       ]);
+    } finally {
+      setIsPreviewing(false);
     }
-  }, [payslip]);
+  }, [isPreviewing, payslip]);
 
   if (!payslip) {
     return (
@@ -144,22 +154,26 @@ const PayslipDetailsScreen = () => {
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           testID="download-button"
-          style={styles.downloadButton}
+          style={[styles.downloadButton, isDownloading && styles.buttonDisabled]}
           onPress={handleDownload}
+          disabled={isDownloading}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Download payslip"
-          accessibilityHint="Double tap to download payslip to device storage">
+          accessibilityHint="Double tap to download payslip to device storage"
+          accessibilityState={{disabled: isDownloading}}>
           <Text style={styles.downloadButtonText}>Download Payslip</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.previewButton}
+          style={[styles.previewButton, isPreviewing && styles.buttonDisabled]}
           onPress={handlePreview}
+          disabled={isPreviewing}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Preview payslip"
-          accessibilityHint="Double tap to open payslip in default viewer app">
+          accessibilityHint="Double tap to open payslip in default viewer app"
+          accessibilityState={{disabled: isPreviewing}}>
           <Text style={styles.previewButtonText}>Preview Payslip</Text>
         </TouchableOpacity>
       </View>
@@ -223,6 +237,9 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.body.fontSize,
     fontWeight: '600',
   },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
   errorText: {
     fontSize: theme.typography.body.fontSize,
     color: theme.colors.error,
@@ -268,4 +285,3 @@ const styles = StyleSheet.create({
 });
 
 export default PayslipDetailsScreen;
-
