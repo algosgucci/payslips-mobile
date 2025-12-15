@@ -92,7 +92,7 @@ const retryOperation = async <T>(
       lastError = error instanceof Error ? error : new Error('Unknown error');
       if (attempt < maxRetries - 1) {
         // Wait before retrying (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt)));
+        await new Promise<void>(resolve => setTimeout(() => resolve(), delay * Math.pow(2, attempt)));
       }
     }
   }
@@ -152,6 +152,9 @@ export const downloadPayslip = async (payslip: Payslip): Promise<string> => {
         );
       }
 
+    // Get file type and create content
+    const fileType = getFileType(payslip.file);
+    
       // Validate file size before creating content
       const estimatedFileSize = fileType === 'pdf' ? 2000 : 500; // Rough estimate in bytes
       const sizeValidation = validateFileSize(estimatedFileSize);
@@ -159,8 +162,6 @@ export const downloadPayslip = async (payslip: Payslip): Promise<string> => {
         throw new AppError(ErrorCode.FILE_SIZE_EXCEEDED, sizeValidation.error);
       }
 
-    // Create file content based on file type
-    const fileType = getFileType(payslip.file);
     let fileContent: string;
     
     if (fileType === 'pdf') {
@@ -309,12 +310,8 @@ export const getDownloadLocationMessage = (filePath: string): string => {
 /**
  * Opens a file for preview using the native file viewer
  * First checks if file exists, downloads if needed
- * @param onStatusChange - Optional callback to notify of status changes
  */
-export const previewPayslip = async (
-  payslip: Payslip,
-  onStatusChange?: (status: 'checking' | 'downloading' | 'opening') => void,
-): Promise<void> => {
+export const previewPayslip = async (payslip: Payslip): Promise<void> => {
   try {
     const fs = getRNFS();
     const downloadDir = getDownloadDirectory();
@@ -340,22 +337,11 @@ export const previewPayslip = async (
     }
 
     // Check if file exists, download if not
-    onStatusChange?.('checking');
     const fileExists = await fs.exists(filePath);
     if (!fileExists) {
       // Download first, then preview
-      onStatusChange?.('downloading');
-      // Yield to UI thread before starting download to keep UI responsive
-      await new Promise<void>(resolve => {
-        InteractionManager.runAfterInteractions(() => {
-          resolve();
-        });
-      });
       await downloadPayslip(payslip);
     }
-
-    // Opening file viewer
-    onStatusChange?.('opening');
 
     // Verify file exists before trying to open
     const verifyExists = await fs.exists(filePath);
@@ -364,15 +350,10 @@ export const previewPayslip = async (
     }
 
     // Open file with native viewer
-    // Note: FileViewer.open() may not resolve immediately on all platforms
-    // We open it and let the calling code handle the modal state
-    FileViewer.open(filePath, {
+    await FileViewer.open(filePath, {
       showOpenWithDialog: true,
       showAppsSuggestions: true,
       displayName: fileName,
-    }).catch(() => {
-      // If opening fails, the error will be caught by the outer try-catch
-      // This is just to prevent unhandled promise rejection
     });
   } catch (error) {
     // Log error for debugging

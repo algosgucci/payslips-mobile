@@ -23,7 +23,8 @@ export const sanitizeFileName = (fileName: string): string => {
   // Remove path separators and dangerous characters
   let sanitized = fileName
     .replace(/[/\\]/g, '_') // Replace path separators
-    .replace(/[<>:"|?*\u0000-\u001f]/g, '_') // Remove invalid characters
+    // eslint-disable-next-line no-control-regex
+    .replace(/[<>:"|?*\u0000-\u001f]/g, '_') // Remove control characters and invalid filename chars
     .replace(/^\.+/, '') // Remove leading dots
     .trim();
 

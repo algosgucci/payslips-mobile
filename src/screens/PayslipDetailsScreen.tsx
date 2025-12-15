@@ -1,6 +1,6 @@
-import React, {useState, useCallback, useEffect} from 'react';
-import {View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, AppState} from 'react-native';
-import {RouteProp, useRoute, useNavigation, useFocusEffect} from '@react-navigation/native';
+import React, {useState, useCallback} from 'react';
+import {View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert} from 'react-native';
+import {RouteProp, useRoute, useNavigation} from '@react-navigation/native';
 import {RootStackParamList} from '../navigation/AppNavigator';
 import {usePayslips} from '../context/PayslipContext';
 import {formatDate, formatDateRange} from '../utils/dateFormatter';
@@ -15,41 +15,11 @@ const PayslipDetailsScreen = () => {
   const navigation = useNavigation();
   const {payslipId} = route.params;
   const {getPayslipById} = usePayslips();
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [isPreviewing, setIsPreviewing] = useState(false);
-  const [previewStatus, setPreviewStatus] = useState<'idle' | 'downloading' | 'preparing' | 'opening'>('idle');
   const [error, setError] = useState<string | null>(null);
 
   const payslip = getPayslipById(payslipId);
 
-  // Reset preview state when screen comes into focus (user returns from file viewer)
-  useFocusEffect(
-    useCallback(() => {
-      // Reset preview state when screen is focused
-      if (isPreviewing) {
-        setIsPreviewing(false);
-        setPreviewStatus('idle');
-      }
-    }, [isPreviewing])
-  );
-
-  // Also handle app state changes (when user returns from file viewer)
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (nextAppState === 'active' && isPreviewing) {
-        // User returned to app, close the modal
-        setIsPreviewing(false);
-        setPreviewStatus('idle');
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [isPreviewing]);
-
   const handleDownload = useCallback(async () => {
-    setIsDownloading(true);
     setError(null);
     try {
       const filePath = await downloadPayslip(payslip!);
@@ -82,38 +52,14 @@ const PayslipDetailsScreen = () => {
           },
         ],
       );
-    } finally {
-      setIsDownloading(false);
     }
   }, [payslip]);
 
   const handlePreview = useCallback(async () => {
-    setIsPreviewing(true);
     setError(null);
-    setPreviewStatus('idle');
     try {
-      // Use requestAnimationFrame to ensure UI updates before heavy operation
-      await new Promise<void>(resolve => {
-        requestAnimationFrame(() => {
-          resolve();
-        });
-      });
-      await previewPayslip(payslip!, (status) => {
-        if (status === 'downloading') {
-          setPreviewStatus('downloading');
-        } else if (status === 'opening') {
-          setPreviewStatus('opening');
-        }
-      });
-      // FileViewer opens the preview - close modal immediately after opening
-      // The preview happens in a separate app, so we can close our modal
-      setIsPreviewing(false);
-      setPreviewStatus('idle');
+      await previewPayslip(payslip!);
     } catch (err) {
-      // Close modal on error too
-      setIsPreviewing(false);
-      setPreviewStatus('idle');
-      
       let errorMessage: string;
       if (err instanceof AppError) {
         errorMessage = ERROR_MESSAGES[err.code] || err.message;
@@ -195,77 +141,26 @@ const PayslipDetailsScreen = () => {
         </View>
       )}
 
-      {/* Loading Modal for Preview */}
-      <Modal
-        visible={isPreviewing}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => {}}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <ActivityIndicator color={theme.colors.primary} size="large" />
-            <Text style={styles.modalTitle}>
-              {previewStatus === 'downloading'
-                ? 'Downloading Payslip'
-                : previewStatus === 'opening'
-                  ? 'Opening Payslip'
-                  : 'Preparing Payslip'}
-            </Text>
-            <Text style={styles.modalMessage}>
-              {previewStatus === 'downloading'
-                ? 'Please wait while we download the payslip to your device...'
-                : previewStatus === 'opening'
-                  ? 'Opening the payslip in your default viewer...'
-                  : 'Please wait while we prepare the payslip...'}
-            </Text>
-          </View>
-        </View>
-      </Modal>
-
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           testID="download-button"
-          style={[styles.downloadButton, isDownloading && styles.downloadButtonDisabled]}
+          style={styles.downloadButton}
           onPress={handleDownload}
-          disabled={isDownloading}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Download payslip"
-          accessibilityHint="Double tap to download payslip to device storage"
-          accessibilityState={{disabled: isDownloading}}>
-          {isDownloading ? (
-            <View style={styles.downloadButtonContent}>
-              <ActivityIndicator color="#FFFFFF" size="small" />
-              <Text style={styles.downloadButtonText}>Downloading...</Text>
-            </View>
-          ) : (
-            <Text style={styles.downloadButtonText}>Download Payslip</Text>
-          )}
+          accessibilityHint="Double tap to download payslip to device storage">
+          <Text style={styles.downloadButtonText}>Download Payslip</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.previewButton, isPreviewing && styles.previewButtonDisabled]}
+          style={styles.previewButton}
           onPress={handlePreview}
-          disabled={isPreviewing}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel="Preview payslip"
-          accessibilityHint="Double tap to open payslip in default viewer app"
-          accessibilityState={{disabled: isPreviewing}}>
-          {isPreviewing ? (
-            <View style={styles.previewButtonContent}>
-              <ActivityIndicator color={theme.colors.primary} size="small" />
-              <Text style={styles.previewButtonText}>
-                {previewStatus === 'downloading'
-                  ? 'Downloading payslip...'
-                  : previewStatus === 'opening'
-                    ? 'Opening payslip...'
-                    : 'Preparing payslip...'}
-              </Text>
-            </View>
-          ) : (
-            <Text style={styles.previewButtonText}>Preview Payslip</Text>
-          )}
+          accessibilityHint="Double tap to open payslip in default viewer app">
+          <Text style={styles.previewButtonText}>Preview Payslip</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -310,14 +205,6 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
     alignItems: 'center',
   },
-  downloadButtonDisabled: {
-    opacity: 0.6,
-  },
-  downloadButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-  },
   downloadButtonText: {
     color: '#FFFFFF',
     fontSize: theme.typography.body.fontSize,
@@ -330,14 +217,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: theme.colors.border,
-  },
-  previewButtonDisabled: {
-    opacity: 0.6,
-  },
-  previewButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
   },
   previewButtonText: {
     color: theme.colors.primary,
@@ -385,42 +264,6 @@ const styles = StyleSheet.create({
   errorBannerText: {
     fontSize: theme.typography.body.fontSize,
     color: theme.colors.error,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.xl,
-    alignItems: 'center',
-    minWidth: 280,
-    maxWidth: '80%',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  modalTitle: {
-    fontSize: theme.typography.h2.fontSize,
-    fontWeight: theme.typography.h2.fontWeight,
-    color: theme.colors.text,
-    marginTop: theme.spacing.md,
-    marginBottom: theme.spacing.sm,
-    textAlign: 'center',
-  },
-  modalMessage: {
-    fontSize: theme.typography.body.fontSize,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
   },
 });
 

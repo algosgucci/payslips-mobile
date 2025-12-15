@@ -24,10 +24,7 @@ const AppNavigator = () => {
           headerTitleStyle: {
             fontWeight: 'bold',
           },
-          headerBackTitleVisible: false,
-          headerLargeTitle: false,
           headerBackButtonDisplayMode: 'minimal',
-          headerShadowVisible: false,
         }}>
         <Stack.Screen
           name="PayslipList"
