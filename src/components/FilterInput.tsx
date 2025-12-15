@@ -26,6 +26,7 @@ const FilterInput: React.FC<FilterInputProps> = ({
           placeholder="Search payslips..."
           value={searchText}
           onChangeText={onSearchChange}
+          maxLength={100}
           accessibilityLabel="Search payslips"
           accessibilityHint="Type to filter payslips by date range"
           accessibilityRole="search"

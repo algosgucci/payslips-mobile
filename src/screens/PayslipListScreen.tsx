@@ -1,5 +1,5 @@
-import React from 'react';
-import {View, FlatList, StyleSheet, Text} from 'react-native';
+import React, {useCallback} from 'react';
+import {View, FlatList, StyleSheet, Text, ListRenderItem} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import PayslipCard from '../components/PayslipCard';
@@ -9,6 +9,7 @@ import {usePayslips} from '../context/PayslipContext';
 import {RootStackParamList} from '../navigation/AppNavigator';
 import {Payslip} from '../types';
 import {theme} from '../theme';
+import {validateSearchText} from '../utils/validation';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -25,24 +26,36 @@ const PayslipListScreen = () => {
     availableYears,
   } = usePayslips();
 
-  const handlePayslipPress = (payslip: Payslip) => {
-    navigation.navigate('PayslipDetails', {payslipId: payslip.id});
-  };
+  const handlePayslipPress = useCallback(
+    (payslip: Payslip) => {
+      navigation.navigate('PayslipDetails', {payslipId: payslip.id});
+    },
+    [navigation],
+  );
 
-  const handleSortToggle = () => {
+  const handleSortToggle = useCallback(() => {
     setSortOrder(sortOrder === 'recent' ? 'oldest' : 'recent');
-  };
+  }, [sortOrder, setSortOrder]);
 
-  const renderPayslipItem = ({item}: {item: Payslip}) => {
-    return (
-      <PayslipCard
-        payslip={item}
-        onPress={() => handlePayslipPress(item)}
-      />
-    );
-  };
+  const handleSearchChange = useCallback(
+    (text: string) => {
+      const validation = validateSearchText(text);
+      if (validation.valid) {
+        setSearchText(text);
+      }
+      // Silently ignore invalid input (or could show a toast)
+    },
+    [setSearchText],
+  );
 
-  const renderEmptyList = () => {
+  const renderPayslipItem = useCallback<ListRenderItem<Payslip>>(
+    ({item}) => {
+      return <PayslipCard payslip={item} onPress={() => handlePayslipPress(item)} />;
+    },
+    [handlePayslipPress],
+  );
+
+  const renderEmptyList = useCallback(() => {
     if (filteredAndSortedPayslips.length === 0) {
       return (
         <View style={styles.emptyContainer}>
@@ -54,13 +67,25 @@ const PayslipListScreen = () => {
       );
     }
     return null;
-  };
+  }, [filteredAndSortedPayslips.length]);
+
+  const keyExtractor = useCallback((item: Payslip) => item.id, []);
+
+  // Optimize FlatList with performance props
+  const getItemLayout = useCallback(
+    (_: any, index: number) => ({
+      length: 60 + theme.spacing.sm * 2, // card minHeight + margins
+      offset: (60 + theme.spacing.sm * 2) * index,
+      index,
+    }),
+    [],
+  );
 
   return (
     <View style={styles.container}>
       <FilterInput
         searchText={searchText}
-        onSearchChange={setSearchText}
+        onSearchChange={handleSearchChange}
         selectedYear={selectedYear}
         onYearChange={setSelectedYear}
         availableYears={availableYears}
@@ -69,10 +94,16 @@ const PayslipListScreen = () => {
       <FlatList
         data={filteredAndSortedPayslips}
         renderItem={renderPayslipItem}
-        keyExtractor={item => item.id}
+        keyExtractor={keyExtractor}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmptyList}
+        getItemLayout={getItemLayout}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={10}
+        windowSize={10}
       />
     </View>
   );

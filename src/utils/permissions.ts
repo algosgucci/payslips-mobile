@@ -31,7 +31,10 @@ export const requestStoragePermission = async (): Promise<boolean> => {
 
     return granted === PermissionsAndroid.RESULTS.GRANTED;
   } catch (err) {
-    console.warn('Permission request error:', err);
+    // Only log in development mode
+    if (__DEV__) {
+      console.warn('Permission request error:', err);
+    }
     return false;
   }
 };

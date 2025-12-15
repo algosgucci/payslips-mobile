@@ -44,27 +44,39 @@ export const PayslipProvider: React.FC<{children: ReactNode}> = ({children}) => 
     return sorted;
   }, [payslips, sortOrder]);
 
+  // Memoize date strings to avoid repeated Date object creation
+  const payslipDateStrings = useMemo(() => {
+    return sortedPayslips.map(payslip => ({
+      id: payslip.id,
+      fromDateStr: new Date(payslip.fromDate).toLocaleDateString().toLowerCase(),
+      toDateStr: new Date(payslip.toDate).toLocaleDateString().toLowerCase(),
+    }));
+  }, [sortedPayslips]);
+
   const filteredAndSortedPayslips = useMemo(() => {
     let filtered = [...sortedPayslips];
 
     // Filter by year
     if (selectedYear) {
       const year = parseInt(selectedYear, 10);
-      filtered = filtered.filter(payslip => getYear(payslip.fromDate) === year);
+      if (!isNaN(year)) {
+        filtered = filtered.filter(payslip => getYear(payslip.fromDate) === year);
+      }
     }
 
-    // Filter by search text (search in date range string)
+    // Filter by search text (search in pre-computed date strings)
     if (searchText.trim()) {
       const searchLower = searchText.toLowerCase();
+      const dateStringMap = new Map(payslipDateStrings.map(d => [d.id, d]));
       filtered = filtered.filter(payslip => {
-        const fromDate = new Date(payslip.fromDate).toLocaleDateString().toLowerCase();
-        const toDate = new Date(payslip.toDate).toLocaleDateString().toLowerCase();
-        return fromDate.includes(searchLower) || toDate.includes(searchLower);
+        const dateStrings = dateStringMap.get(payslip.id);
+        if (!dateStrings) return false;
+        return dateStrings.fromDateStr.includes(searchLower) || dateStrings.toDateStr.includes(searchLower);
       });
     }
 
     return filtered;
-  }, [sortedPayslips, selectedYear, searchText]);
+  }, [sortedPayslips, selectedYear, searchText, payslipDateStrings]);
 
   const getPayslipById = (id: string): Payslip | undefined => {
     return payslips.find(p => p.id === id);
